@@ -605,7 +605,7 @@ function doOptions(e) {
     "Access-Control-Allow-Methods": "POST",
     "Access-Control-Allow-Headers": "Content-Type"
   };
-  return ContentService.createTextOutput("").setMimeType(ContentService.MimeType.JSON);
+  'Content-Type': 'text/plain;charset=utf-8'
 }
                 </textarea>
             </div>
@@ -1586,58 +1586,40 @@ function doOptions(e) {
         }
 
         function sendDataToGoogleSheets() {
-            const url = localStorage.getItem('adjectiveQuestTeacherURL');
-            if (!url) return; // Silent return if not configured
             
-            const payload = {
-                name: state.name,
-                level: "Standard",
-                totalScore: state.score,
-                wsFound: state.progress.ws.found.length,
-                boardScore: state.progress.board.score,
-                fcPairs: state.progress.fc.pairs
-            };
-            
-            // Fire and forget POST
-            fetch(url, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).catch(e => console.log("Silent error sending to sheets: ", e));
-        }
+function sendDataToGoogleSheets() {
+    const url = localStorage.getItem('adjectiveQuestTeacherURL');
+    if (!url) return;
 
+    let activity = "Word Search Garden";
 
-        /* --- PERSISTENCE --- */
-        function saveState() {
-            localStorage.setItem('adjectiveQuestState', JSON.stringify(state));
-        }
+    if (state.progress.fc.completed) {
+        activity = "Artist's Flashcard Studio";
+    } else if (state.progress.board.completed) {
+        activity = "Swan Kingdom Board";
+    }
 
-        function loadState() {
-            const saved = localStorage.getItem('adjectiveQuestState');
-            if (saved) {
-                try {
-                    const parsed = JSON.parse(saved);
-                    state = { ...state, ...parsed }; // Merge
-                } catch(e){}
-            }
-            
-            const teacherUrl = localStorage.getItem('adjectiveQuestTeacherURL');
-            if (teacherUrl) document.getElementById('teacher-url').value = teacherUrl;
-        }
+    const payload = {
+        name: state.name,
+        activity: activity,
+        totalScore: state.score,
+        wsFound: state.progress.ws.found.length,
+        boardScore: state.progress.board.score,
+        fcPairs: state.progress.fc.pairs,
+        wsCompleted: state.progress.ws.completed,
+        boardCompleted: state.progress.board.completed,
+        fcCompleted: state.progress.fc.completed
+    };
 
-        /* --- INIT --- */
-        window.onload = () => {
-            loadState();
-            // If returning user with a name, jump to map
-            if (state.name && (state.progress.ws.completed || state.progress.ws.found.length > 0)) {
-                showScreen('screen-map');
-            } else {
-                showScreen('screen-welcome');
-            }
-        };
-
-    </script>
-</body>
-</html>
+    fetch(url, {
+        method: 'POST',
+        mode: 'no-cors',
+        cache: 'no-cache',
+        headers: {
+            'Content-Type': 'text/plain;charset=utf-8'
+        },
+        body: JSON.stringify(payload)
+    }).catch(error => {
+        console.error("Google Sheets sync error:", error);
+    });
+}
